@@ -2,6 +2,7 @@
 dataset/
 data/
 test images/
+_dataset_backup/
 *.zip
 
 # ---- Generated / runtime files ----
