@@ -239,4 +239,4 @@ python -m pytest
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Apache License — see [LICENSE](LICENSE).
