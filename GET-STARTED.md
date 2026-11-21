@@ -6,7 +6,7 @@ New here? This guide gets the app running in ~5 minutes. For full details see [R
 
 ## 1. Install Python
 
-You need Python 3.10 or newer. Check with:
+You need Python **3.11 or newer** (scikit-learn 1.8 requires it). Check with:
 
 ```bash
 python --version
@@ -33,9 +33,40 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Open <http://127.0.0.1:5000> in your browser and upload a CT scan image (PNG, JPEG, BMP, or TIFF).
+Open <http://127.0.0.1:5000> in your browser and upload a CT scan image (PNG, JPEG, BMP, TIFF, or DICOM `.dcm`). DICOM files are converted to PNG automatically.
 
-That's it — the app works out of the box because `model.pkl` is included in the repo. No dataset download needed just to try it.
+That's it — the app works out of the box because `model.pkl` and `model_info.json` are included in the repo. No dataset download needed just to try it.
+
+The results show the predicted class name, its description, the per-class probabilities, and the basic image statistics.
+
+## 4. Production server (optional)
+
+Flask's development server is not for production.
+
+```bash
+# Windows / macOS / Linux (waitress)
+python serve.py
+# -> http://0.0.0.0:8000
+
+# Linux / macOS (gunicorn)
+gunicorn --bind 0.0.0.0:8000 --workers 2 --timeout 120 app:app
+```
+
+Or use Docker:
+
+```bash
+docker build -t ctscan-analyzer .
+docker run --rm -p 8000:8000 ctscan-analyzer
+```
+
+Check it with <http://127.0.0.1:8000/health>.
+
+## 5. Run the tests (optional)
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest
+```
 
 ## Optional: retrain the model yourself
 
@@ -49,9 +80,20 @@ Only needed if you want to train on your own copy of the data:
    python model.py --dataset "C:/path/to/dataset"
    ```
 
-   `--dataset` accepts the folder containing the class subfolders (e.g. `.../Data/train`) or the dataset root. You can also set the `CTSCAN_DATASET_DIR` environment variable instead.
+   `--dataset` accepts the folder containing the class subfolders (e.g. `.../Data/train`), the folder containing `train/valid/test`, or the dataset root. You can also set the `CTSCAN_DATASET_DIR` environment variable instead.
 
-This rewrites `model.pkl` and creates `model_classes.json`.
+This rewrites `model.pkl`, creates `model_classes.json` and `model_info.json`, and saves valid/test metrics under `reports/`.
+
+## Optional: try the transfer-learning CNN
+
+```bash
+pip install -r requirements-cnn.txt
+python train_cnn.py --dataset dataset/dataset --epochs 8 --freeze-epochs 3 --image-size 160
+CTSCAN_USE_CNN=1 python app.py
+# Windows PowerShell: $env:CTSCAN_USE_CNN="1"; python app.py
+```
+
+This produces `model_cnn.pt` and `reports/cnn_metrics.json`. See README.md for the measured comparison.
 
 ## Troubleshooting
 
@@ -59,5 +101,8 @@ This rewrites `model.pkl` and creates `model_classes.json`.
 | --- | --- |
 | `No module named 'flask'` | You forgot to activate the venv or install requirements — redo step 2 |
 | `Dataset not found at ...` when training | Pass `--dataset <path>` or check the folder layout in README.md |
-| `InconsistentVersionWarning` on startup | `model.pkl` was trained on scikit-learn 1.6.x — retrain with `python model.py` or pin `scikit-learn==1.6.*` |
-| Upload fails with "Unsupported file type" | Only PNG/JPEG/BMP/TIFF are accepted |
+| `InconsistentVersionWarning` on startup | Retrain with `python model.py` (the included model was trained with scikit-learn 1.8) |
+| Upload fails with "Unsupported file type" | Only PNG/JPEG/BMP/TIFF/DICOM are accepted |
+| DICOM upload says pydicom is missing | `pip install pydicom` (already in requirements.txt) |
+| CNN training says torch is missing | `pip install -r requirements-cnn.txt` |
+| Port 5000 already in use | Set `PORT=5001` before running `python app.py` (PowerShell: `$env:PORT="5001"`) |

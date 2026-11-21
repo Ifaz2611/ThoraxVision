@@ -1,0 +1,4 @@
+# Optional: only needed for train_cnn.py and serving a CNN checkpoint.
+-r requirements.txt
+torch>=2.2
+torchvision>=0.17

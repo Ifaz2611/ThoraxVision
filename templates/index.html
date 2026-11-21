@@ -13,7 +13,7 @@
     
     <form id="uploadForm">
       <div class="upload-section">
-        <input type="file" id="imageInput" name="image" accept="image/*" required />
+        <input type="file" id="imageInput" name="image" accept="image/*,.dcm,.dicom,application/dicom" required />
         <button type="submit">Analyze Image</button>
       </div>
     </form>
@@ -33,6 +33,10 @@
             <div id="predictionSection" class="result-section" style="margin-top: 24px;">
         <h3>Model Prediction:</h3>
         <div id="predictionResult"></div>
+      </div>
+      <div id="probabilitiesSection" class="result-section" style="display: none;">
+        <h3>Class Probabilities:</h3>
+        <div id="probabilitiesResult"></div>
       </div>
       <div id="analysisSection" class="result-section">
         <h3>Image Analysis Results:</h3>

@@ -8,10 +8,10 @@ document.addEventListener('DOMContentLoaded', function () {
   const analysisResults = document.getElementById('analysisResults');
   const submitButton = form.querySelector('button[type="submit"]');
 
-  // Image preview functionality
+  // Image preview functionality (DICOM files cannot be previewed by browsers)
   imageInput.addEventListener('change', () => {
     const file = imageInput.files[0];
-    if (file) {
+    if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = e => {
         previewImage.src = e.target.result;
@@ -77,27 +77,61 @@ document.addEventListener('DOMContentLoaded', function () {
     // Display prediction result
     const predictionResult = document.getElementById('predictionResult');
     if (data.model_prediction !== undefined) {
-      let predText = data.model_prediction;
-      let description = '';
-      if (data.class_names && data.class_names.length > 0) {
-        const idx = parseInt(data.model_prediction);
-        if (!isNaN(idx) && idx >= 0 && idx < data.class_names.length) {
-          const cname = data.class_names[idx];
-          predText = `${cname} (${data.model_prediction})`;
-          if (data.class_descriptions && data.class_descriptions[cname]) {
-            description = `<div class='prediction-description'>${data.class_descriptions[cname]}</div>`;
-          }
-        }
-      }
-      predictionResult.innerHTML = `<span class="prediction-value">${predText}</span>${description}`;
+      const predText = data.predicted_label || data.model_prediction;
+      const description = data.prediction_description || '';
+      predictionResult.innerHTML =
+        `<span class="prediction-value">${escapeHtml(predText)}</span>` +
+        (description
+          ? `<div class="prediction-description">${escapeHtml(description)}</div>`
+          : '');
       document.getElementById('predictionSection').style.display = 'block';
     } else {
       predictionResult.innerHTML = '';
       document.getElementById('predictionSection').style.display = 'none';
     }
 
+    displayProbabilities(data.probabilities);
+
     // Show results section
     resultsSection.style.display = 'block';
+  }
+
+  function displayProbabilities(probabilities) {
+    const section = document.getElementById('probabilitiesSection');
+    const container = document.getElementById('probabilitiesResult');
+
+    if (!Array.isArray(probabilities) || probabilities.length === 0) {
+      section.style.display = 'none';
+      container.innerHTML = '';
+      return;
+    }
+
+    container.innerHTML = probabilities.map(item => {
+      const percentage = Math.max(0, Math.min(100, item.probability * 100));
+      const label = item.label || item.class_name || 'Unknown';
+      return `
+        <div class="probability-row">
+          <div class="probability-label">
+            <span>${escapeHtml(label)}</span>
+            <span>${percentage.toFixed(1)}%</span>
+          </div>
+          <div class="probability-bar">
+            <div class="probability-fill" style="width: ${percentage.toFixed(1)}%"></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    section.style.display = 'block';
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   function displayAnalysis(analysis) {
@@ -131,7 +165,7 @@ document.addEventListener('DOMContentLoaded', function () {
       analysis.findings.forEach(finding => {
         const isWarning = finding.includes('⚠️') || finding.includes('IMPORTANT') || finding.includes('Consult');
         const className = isWarning ? 'warning' : '';
-        html += `<li class="${className}">${finding}</li>`;
+        html += `<li class="${className}">${escapeHtml(finding)}</li>`;
       });
       
       html += '</ul>';
@@ -139,14 +173,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Disclaimer
     if (analysis.disclaimer) {
-      html += `<div class="disclaimer"><p><strong>Disclaimer:</strong> ${analysis.disclaimer}</p></div>`;
+      html += `<div class="disclaimer"><p><strong>Disclaimer:</strong> ${escapeHtml(analysis.disclaimer)}</p></div>`;
     }
 
     analysisResults.innerHTML = html;
   }
 
   function displayError(message) {
-    analysisResults.innerHTML = `<div class="error"><strong>Error:</strong> ${message}</div>`;
+    analysisResults.innerHTML = `<div class="error"><strong>Error:</strong> ${escapeHtml(message)}</div>`;
+    document.getElementById('probabilitiesSection').style.display = 'none';
+    document.getElementById('predictionSection').style.display = 'none';
     resultsSection.style.display = 'block';
   }
 });
