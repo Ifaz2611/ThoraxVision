@@ -1,3 +1,4 @@
+import base64
 import os
 import uuid
 
@@ -187,6 +188,12 @@ def upload_image():
         prediction = predictor.predict(processed_path)
         metadata = class_metadata(predictor.classes)
 
+        dicom_preview = None
+        if input_type == "dicom":
+            with open(processed_path, "rb") as preview_file:
+                encoded = base64.b64encode(preview_file.read()).decode("ascii")
+                dicom_preview = f"data:image/png;base64,{encoded}"
+
         return jsonify(
             {
                 "analysis": analysis,
@@ -197,6 +204,7 @@ def upload_image():
                 "probabilities": prediction["probabilities"],
                 "model_type": predictor.model_type,
                 "input_type": input_type,
+                "dicom_preview": dicom_preview,
                 **metadata,
             }
         )

@@ -3,50 +3,132 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CT Scan Image Analyzer_By_IMZ</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <title>ThoraxVision — CT Scan Image Analyzer</title>
+  <meta name="description" content="Minimal, modern chest CT scan classifier and radiomic analysis." />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
 </head>
 <body>
-  <div class="container">
-    <h1>CT Scan Image Analyzer</h1>
-    <p class="subtitle">Perform basic analysis on CT scan images</p>
-    
-    <form id="uploadForm">
-      <div class="upload-section">
-        <input type="file" id="imageInput" name="image" accept="image/*,.dcm,.dicom,application/dicom" required />
-        <button type="submit">Analyze Image</button>
+  <div class="app-shell">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <svg class="brand-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 3v18"/>
+          <path d="M3 12h18"/>
+        </svg>
+        <span class="brand-name">ThoraxVision</span>
+        <span class="brand-tagline">CT Scan Image Analyzer</span>
       </div>
-    </form>
-
-    <div id="preview" class="section">
-      <h3>Image Preview:</h3>
-      <img id="previewImage" src="#" alt="Preview" style="display: none;" />
-    </div>
-
-    <div id="loading" class="loading" style="display: none;">
-      <div class="spinner"></div>
-      <p>Analyzing image...</p>
-    </div>
-
-
-    <div id="results" class="section" style="display: none;">
-            <div id="predictionSection" class="result-section" style="margin-top: 24px;">
-        <h3>Model Prediction:</h3>
-        <div id="predictionResult"></div>
+      <div class="header-meta">
+        <span id="modelStatus" class="model-status">RandomForest</span>
       </div>
-      <div id="probabilitiesSection" class="result-section" style="display: none;">
-        <h3>Class Probabilities:</h3>
-        <div id="probabilitiesResult"></div>
-      </div>
-      <div id="analysisSection" class="result-section">
-        <h3>Image Analysis Results:</h3>
-        <div id="analysisResults"></div>
-      </div>
-    </div>
+    </header>
 
-    <div class="disclaimer">
-      <p><strong>DISCLAIMER:</strong> This tool is for educational purposes only. 
-      It cannot provide medical diagnoses. Always consult qualified medical professionals for proper interpretation of medical images.</p>
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Upload & Quick Samples Section -->
+      <section class="ingestion-section">
+        <form id="uploadForm">
+          <div class="dropzone" id="dropzone">
+            <input type="file" id="imageInput" name="image" accept="image/*,.dcm,.dicom,application/dicom" class="file-input" required />
+            <div class="dropzone-inner">
+              <svg class="dropzone-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <div class="dropzone-text">
+                <span class="dropzone-title">Drop a CT scan here, or <button type="button" class="link-btn" id="browseTrigger">browse</button></span>
+                <span class="dropzone-hint">DICOM, PNG, JPG, TIFF up to 25 MB</span>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <!-- Sample Cases Bar -->
+        <div class="samples-row">
+          <span class="samples-label">Try sample:</span>
+          <div class="samples-list">
+            <button type="button" class="sample-btn" data-file="normal_sample.png">Normal</button>
+            <button type="button" class="sample-btn" data-file="adenocarcinoma_sample.png">Adenocarcinoma</button>
+            <button type="button" class="sample-btn" data-file="squamous_cell_sample.png">Squamous Cell</button>
+            <button type="button" class="sample-btn" data-file="large_cell_sample.png">Large Cell</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Loading State -->
+      <div id="loading" class="state-loading" style="display: none;">
+        <div class="spinner"></div>
+        <span>Analyzing scan...</span>
+      </div>
+
+      <!-- Error State -->
+      <div id="errorBox" class="error-banner" style="display: none;"></div>
+
+      <!-- Workspace Area: Image & Analysis -->
+      <section id="workspace" class="workspace" style="display: none;">
+        <!-- Left: Image Viewport -->
+        <div class="viewport-col">
+          <div id="preview" class="image-frame">
+            <img id="previewImage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="CT Scan" style="display: none;" />
+          </div>
+          <!-- View Options -->
+          <div class="contrast-bar">
+            <span class="contrast-label">Window</span>
+            <div class="contrast-options">
+              <button type="button" class="contrast-btn active" data-filter="normal">Normal</button>
+              <button type="button" class="contrast-btn" data-filter="high">High Contrast</button>
+              <button type="button" class="contrast-btn" data-filter="invert">Invert</button>
+            </div>
+          </div>
+          <div id="fileMeta" class="file-meta"></div>
+        </div>
+
+        <!-- Right: Results Panel -->
+        <div id="results" class="results-col" style="display: none;">
+          <!-- Primary Prediction -->
+          <div id="predictionSection" class="prediction-header">
+            <div class="prediction-top">
+              <h2 id="predictionResult" class="prediction-title">--</h2>
+              <span id="predictionBadge" class="status-pill">--</span>
+            </div>
+            <div class="confidence-line">
+              <span id="confidenceText" class="confidence-val">--% probability</span>
+            </div>
+            <p id="predictionDescription" class="prediction-desc"></p>
+          </div>
+
+          <!-- Class Probabilities Breakdown -->
+          <div id="probabilitiesSection" class="probabilities-section" style="display: none;">
+            <h3 class="subsection-title">Class Probabilities</h3>
+            <div id="probabilitiesResult" class="probabilities-list"></div>
+          </div>
+
+          <!-- Radiomic Metrics -->
+          <div id="analysisSection" class="analysis-section">
+            <h3 class="subsection-title">Image Statistics</h3>
+            <div id="analysisResults"></div>
+          </div>
+
+          <!-- Actions -->
+          <div class="actions-row">
+            <button type="button" id="copyReportBtn" class="btn btn-secondary">Copy Summary</button>
+            <button type="button" id="resetBtn" class="btn btn-ghost">Clear</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>Educational demo only — not a medical device. Always consult a qualified radiologist.</p>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast" style="display: none;">
+      <span id="toastMsg">Copied to clipboard</span>
     </div>
   </div>
 
