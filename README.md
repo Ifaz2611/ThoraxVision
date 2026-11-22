@@ -1,4 +1,4 @@
-# CT Scan Image Analyzer
+# ThoraxVision
 
 [![Tests](https://img.shields.io/badge/tests-20%20passing-brightgreen)](tests/)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
@@ -35,10 +35,10 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install -r requirements.txt
-python app.py
+python -m thoraxvision.app
 ```
 
-Open <http://127.0.0.1:5000> and upload a scan. The app works out of the box — `model.pkl` and `model_info.json` are committed, so no dataset download is needed just to try it.
+Open <http://127.0.0.1:5000> and upload a scan. The app works out of the box — `models/model.pkl` and `models/model_info.json` are committed, so no dataset download is needed just to try it.
 
 New here? See [GET-STARTED.md](GET-STARTED.md) for a guided walkthrough.
 
@@ -46,29 +46,36 @@ New here? See [GET-STARTED.md](GET-STARTED.md) for a guided walkthrough.
 
 ```
 .
-├── app.py                 # Flask app: routes, upload handling, analysis
-├── predictor.py           # Model loading (RandomForest / CNN) + prediction
-├── class_info.py          # Canonical class names, labels, descriptions
-├── dataset_utils.py       # Dataset discovery, loading, metrics
-├── dicom_utils.py         # DICOM detection, windowing, PNG conversion
-├── model.py               # Trains model.pkl from the dataset
-├── evaluate.py            # Evaluates a saved model on a dataset split
-├── train_cnn.py           # Optional transfer-learning experiment
-├── serve.py               # Cross-platform waitress production entrypoint
-├── model.pkl              # Trained RandomForest model (~250 KB, committed)
-├── model_info.json        # Model metadata + baseline metrics (committed)
-├── model_classes.json     # Class order written by model.py (git-ignored)
-├── model_cnn.pt           # Optional CNN checkpoint (git-ignored)
-├── requirements.txt       # Runtime dependencies
-├── requirements-dev.txt   # Runtime + pytest
-├── requirements-cnn.txt   # Runtime + torch/torchvision
-├── reports/               # Generated evaluation metrics
-├── tests/                 # pytest suite
-├── static/                # style.css, script.js
-├── templates/             # index.html
+├── thoraxvision/           # Application package
+│   ├── app.py              # Flask app: routes, upload handling, analysis
+│   ├── serve.py            # Cross-platform waitress production entrypoint
+│   ├── predictor.py        # Model loading (RandomForest / CNN) + prediction
+│   ├── class_info.py       # Canonical class names, labels, descriptions
+│   ├── dataset_utils.py    # Dataset discovery, loading, metrics
+│   ├── dicom_utils.py      # DICOM detection, windowing, PNG conversion
+│   ├── paths.py            # Canonical repo paths (models/, dataset/, ...)
+│   ├── static/             # style.css, script.js
+│   └── templates/          # index.html
+├── scripts/                # Training & evaluation CLIs
+│   ├── train_model.py      # Trains models/model.pkl from the dataset
+│   ├── evaluate.py         # Evaluates a saved model on a dataset split
+│   └── train_cnn.py        # Optional transfer-learning experiment
+├── models/                 # Model artifacts
+│   ├── model.pkl           # Trained RandomForest model (~250 KB, committed)
+│   ├── model_info.json     # Model metadata + baseline metrics (committed)
+│   ├── model_classes.json  # Class order written by train_model.py (git-ignored)
+│   ├── model_cnn.pt        # Optional CNN checkpoint (git-ignored)
+│   └── legacy/             # Old model experiments (git-ignored)
+├── dataset/                # Training data (git-ignored)
+│   └── Data/{train,valid,test}
+├── reports/                # Generated evaluation metrics
+├── tests/                  # pytest suite
+├── requirements.txt        # Runtime dependencies
+├── requirements-dev.txt    # Runtime + pytest
+├── requirements-cnn.txt    # Runtime + torch/torchvision
 ├── Dockerfile
 ├── .dockerignore
-└── uploads/               # Created at runtime, git-ignored
+└── uploads/                # Created at runtime, git-ignored
 ```
 
 ## Dataset
@@ -93,13 +100,13 @@ Flask's dev server is not for production. Options:
 
 ```bash
 # waitress (Windows / macOS / Linux)
-python serve.py            # -> http://0.0.0.0:8000
+python -m thoraxvision.serve    # -> http://0.0.0.0:8000
 
 # gunicorn (Linux / macOS)
-gunicorn --bind 0.0.0.0:8000 --workers 2 --timeout 120 app:app
+gunicorn --bind 0.0.0.0:8000 --workers 2 --timeout 120 thoraxvision.app:app
 ```
 
-`serve.py` respects `HOST`, `PORT` (default `8000`), and `WEB_THREADS` (default `4`).
+`thoraxvision/serve.py` respects `HOST`, `PORT` (default `8000`), and `WEB_THREADS` (default `4`).
 
 ### Docker
 
@@ -131,41 +138,41 @@ Returns `503` when the model can't be loaded. Note: the Docker daemon must be ru
 ### RandomForest baseline
 
 ```bash
-python model.py                                  # auto-detects ./dataset
-python model.py --dataset "C:/path/to/dataset"   # or set CTSCAN_DATASET_DIR
+python scripts/train_model.py                                  # auto-detects ./dataset
+python scripts/train_model.py --dataset "C:/path/to/dataset"   # or set CTSCAN_DATASET_DIR
 ```
 
 `--dataset` accepts the class-subfolder dir (`.../Data/train`), the dir containing `train/valid/test`, a Kaggle root containing `Data/train`, or the repo root. Trains on `train/`, evaluates on `valid/` and `test/` when present, and writes:
 
-- `model.pkl` — compressed RandomForest classifier
-- `model_classes.json` — canonical class order
-- `model_info.json` — sklearn version, image size, dataset paths, metrics
+- `models/model.pkl` — compressed RandomForest classifier
+- `models/model_classes.json` — canonical class order
+- `models/model_info.json` — sklearn version, image size, dataset paths, metrics
 - `reports/rf_{train,valid,test}.json` — per-split metrics
 
 ### Evaluate a saved model
 
 ```bash
-python evaluate.py --split test --output reports/rf_test.json
-python evaluate.py --model model_cnn.pt --split test   # works for RF or CNN
+python scripts/evaluate.py --split test --output reports/rf_test.json
+python scripts/evaluate.py --model models/model_cnn.pt --split test   # works for RF or CNN
 ```
 
 ### Transfer-learning CNN (optional)
 
 ```bash
 pip install -r requirements-cnn.txt
-python train_cnn.py --dataset dataset/dataset --epochs 8 --freeze-epochs 3 --image-size 160
+python scripts/train_cnn.py --dataset dataset/Data --epochs 8 --freeze-epochs 3 --image-size 160
 ```
 
-Fine-tunes a pretrained MobileNetV2 (or ResNet18): freezes the backbone for `--freeze-epochs`, keeps the best validation macro-F1 checkpoint, and writes `model_cnn.pt` (git-ignored) plus `reports/cnn_metrics.json`.
+Fine-tunes a pretrained MobileNetV2 (or ResNet18): freezes the backbone for `--freeze-epochs`, keeps the best validation macro-F1 checkpoint, and writes `models/model_cnn.pt` (git-ignored) plus `reports/cnn_metrics.json`.
 
 Serve the CNN instead of the RandomForest:
 
 ```bash
-CTSCAN_USE_CNN=1 python app.py                    # opt in
-CTSCAN_MODEL_PATH=model_cnn.pt python app.py       # or point at a checkpoint
+CTSCAN_USE_CNN=1 python -m thoraxvision.app          # opt in
+CTSCAN_MODEL_PATH=models/model_cnn.pt python -m thoraxvision.app   # or point at a checkpoint
 ```
 
-Windows PowerShell: `$env:CTSCAN_USE_CNN="1"; python app.py`
+Windows PowerShell: `$env:CTSCAN_USE_CNN="1"; python -m thoraxvision.app`
 
 CNN deps aren't in the default Docker image (torch adds several hundred MB) — build a custom image if needed.
 
@@ -228,14 +235,14 @@ python -m pytest
 
 ## Model distribution
 
-`model.pkl` (~250 KB compressed) stays **in the repo** — it's required at startup and avoids a release-artifact dependency. `model_info.json` is committed alongside it as the class-order/metadata fallback when `model_classes.json` is absent. `model_cnn.pt` (~9 MB) is **not** committed; it's reproducible via `train_cnn.py`. If the RF model ever grows past a few MB, move it to a release artifact or Git LFS.
+`models/model.pkl` (~250 KB compressed) stays **in the repo** — it's required at startup and avoids a release-artifact dependency. `models/model_info.json` is committed alongside it as the class-order/metadata fallback when `model_classes.json` is absent. `models/model_cnn.pt` (~9 MB) is **not** committed; it's reproducible via `scripts/train_cnn.py`. If the RF model ever grows past a few MB, move it to a release artifact or Git LFS.
 
 ## Maintainer notes
 
-- `model.pkl` was trained with scikit-learn 1.8.0; `requirements.txt` pins `scikit-learn>=1.8,<2.0`. Retrain with `python model.py` after a major sklearn upgrade.
+- `models/model.pkl` was trained with scikit-learn 1.8.0; `requirements.txt` pins `scikit-learn>=1.8,<2.0`. Retrain with `python scripts/train_model.py` after a major sklearn upgrade.
 - The model loads once at import. If loading fails, the app still starts, `/health` returns `503`, and `/upload` returns a clear error.
 - Uploaded files and DICOM conversions are deleted in `finally` blocks.
-- If the dataset ever landed in git history, purge it with `git filter-repo --path dataset --path "test images" --invert-paths`.
+- If the dataset ever landed in git history, purge it with `git filter-repo --path dataset --path test_images --invert-paths`.
 
 ## License
 

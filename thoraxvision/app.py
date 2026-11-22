@@ -1,18 +1,17 @@
 import os
 import uuid
-from pathlib import Path
 
 import cv2
 import numpy as np
 from flask import Flask, jsonify, render_template, request
 from werkzeug.utils import secure_filename
 
-from class_info import class_metadata
-from dicom_utils import DicomError, dicom_to_png, is_dicom_file
-from predictor import PredictorUnavailableError, load_predictor
+from .class_info import class_metadata
+from .dicom_utils import DicomError, dicom_to_png, is_dicom_file
+from .paths import UPLOADS_DIR
+from .predictor import PredictorUnavailableError, load_predictor
 
-BASE_DIR = Path(__file__).resolve().parent
-UPLOAD_FOLDER = BASE_DIR / "uploads"
+UPLOAD_FOLDER = UPLOADS_DIR
 ALLOWED_EXTENSIONS = {
     "png",
     "jpg",

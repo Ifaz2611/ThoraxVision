@@ -7,8 +7,8 @@ image and the default app stay small. Install the extra dependencies with::
 
 Then train and compare against the RandomForest baseline::
 
-    python train_cnn.py --dataset dataset/dataset --epochs 8
-    python evaluate.py --model model_cnn.pt --split test
+    python scripts/train_cnn.py --dataset dataset/Data --epochs 8
+    python scripts/evaluate.py --model models/model_cnn.pt --split test
 """
 
 from __future__ import annotations
@@ -16,18 +16,23 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Allow running as `python scripts/train_cnn.py` from anywhere.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import numpy as np
 
-from class_info import canonical_class_name
-from dataset_utils import (
+from thoraxvision.class_info import canonical_class_name
+from thoraxvision.dataset_utils import (
     IMAGE_EXTENSIONS,
     compute_metrics,
     format_metrics,
     resolve_dataset_splits,
 )
+from thoraxvision.paths import MODELS_DIR, REPORTS_DIR
 
 try:
     import torch
@@ -36,13 +41,12 @@ try:
     from torchvision import models, transforms
 except ImportError as exc:  # pragma: no cover - exercised without torch
     raise SystemExit(
-        "train_cnn.py requires torch and torchvision. Install them with:\n"
+        "scripts/train_cnn.py requires torch and torchvision. Install them with:\n"
         "  pip install -r requirements-cnn.txt"
     ) from exc
 
-BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_OUTPUT = BASE_DIR / "model_cnn.pt"
-DEFAULT_METRICS = BASE_DIR / "reports" / "cnn_metrics.json"
+DEFAULT_OUTPUT = MODELS_DIR / "model_cnn.pt"
+DEFAULT_METRICS = REPORTS_DIR / "cnn_metrics.json"
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 

@@ -9,9 +9,9 @@ from typing import Iterable
 import numpy as np
 from PIL import Image
 
-from class_info import canonical_class_name
+from .class_info import canonical_class_name
+from .paths import REPO_ROOT
 
-BASE_DIR = Path(__file__).resolve().parent
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
 SPLIT_NAMES = ("train", "valid", "test")
 VALID_NAMES = ("valid", "val", "validation")
@@ -103,10 +103,10 @@ def resolve_dataset_splits(
         return resolve_dataset_splits(env_path)
 
     for candidate in (
-        BASE_DIR / "dataset" / "Data",
-        BASE_DIR / "dataset" / "dataset" / "Data",
-        BASE_DIR / "dataset",
-        BASE_DIR / "data",
+        REPO_ROOT / "dataset" / "Data",
+        REPO_ROOT / "dataset" / "dataset" / "Data",
+        REPO_ROOT / "dataset",
+        REPO_ROOT / "data",
     ):
         try:
             return resolve_dataset_splits(candidate)

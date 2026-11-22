@@ -1,6 +1,6 @@
 import json
 
-from class_info import (
+from thoraxvision.class_info import (
     CANONICAL_CLASSES,
     canonical_class_name,
     class_metadata,

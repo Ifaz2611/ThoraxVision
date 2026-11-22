@@ -4,24 +4,27 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
-from dataset_utils import (
+# Allow running as `python scripts/evaluate.py` from anywhere.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from thoraxvision.dataset_utils import (
     compute_metrics,
     format_metrics,
     iter_class_images,
     resolve_dataset_splits,
 )
-from predictor import load_predictor
-
-BASE_DIR = Path(__file__).resolve().parent
+from thoraxvision.paths import MODELS_DIR
+from thoraxvision.predictor import load_predictor
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Evaluate model.pkl (or a CNN checkpoint) on a dataset split."
     )
-    parser.add_argument("--model", default=str(BASE_DIR / "model.pkl"))
+    parser.add_argument("--model", default=str(MODELS_DIR / "model.pkl"))
     parser.add_argument(
         "--dataset",
         default=None,

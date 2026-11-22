@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from app import UPLOAD_FOLDER, app
+from thoraxvision.app import UPLOAD_FOLDER, app
 
 
 @pytest.fixture()

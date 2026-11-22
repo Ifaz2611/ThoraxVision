@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from dataset_utils import (
+from thoraxvision.dataset_utils import (
     compute_metrics,
     discover_classes,
     iter_class_images,

@@ -1,25 +1,28 @@
 import argparse
 import json
 import os
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+# Allow running as `python scripts/train_model.py` from anywhere.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import joblib
 import sklearn
 from sklearn.ensemble import RandomForestClassifier
 
-from dataset_utils import (
+from thoraxvision.dataset_utils import (
     compute_metrics,
     format_metrics,
     load_split,
     resolve_dataset_splits,
 )
+from thoraxvision.paths import MODELS_DIR, REPORTS_DIR, REPO_ROOT
 
-BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "model.pkl"
-CLASSES_PATH = BASE_DIR / "model_classes.json"
-INFO_PATH = BASE_DIR / "model_info.json"
-REPORTS_DIR = BASE_DIR / "reports"
+MODEL_PATH = MODELS_DIR / "model.pkl"
+CLASSES_PATH = MODELS_DIR / "model_classes.json"
+INFO_PATH = MODELS_DIR / "model_info.json"
 IMG_SIZE = 128
 
 
@@ -28,7 +31,7 @@ def _display_path(path: Path | None) -> str | None:
     if path is None:
         return None
     try:
-        return path.relative_to(BASE_DIR).as_posix()
+        return path.relative_to(REPO_ROOT).as_posix()
     except ValueError:
         return path.as_posix()
 
@@ -107,6 +110,7 @@ def main():
             )
         )
 
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
     joblib.dump(model, MODEL_PATH, compress=3)
     CLASSES_PATH.write_text(json.dumps(classes, indent=2), encoding="utf-8")
 

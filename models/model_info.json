@@ -13,9 +13,9 @@
   ],
   "trained_at": "2026-11-21T18:15:24.506176+00:00",
   "dataset": {
-    "train": "dataset/dataset/Data/train",
-    "valid": "dataset/dataset/Data/valid",
-    "test": "dataset/dataset/Data/test"
+    "train": "dataset/Data/train",
+    "valid": "dataset/Data/valid",
+    "test": "dataset/Data/test"
   },
   "metrics": {
     "train": {

@@ -1,17 +1,17 @@
 """Cross-platform production entrypoint using waitress.
 
 Usage:
-    python serve.py
+    python -m thoraxvision.serve
 
 For gunicorn on Linux/macOS:
-    gunicorn --bind 0.0.0.0:8000 --workers 2 --timeout 120 app:app
+    gunicorn --bind 0.0.0.0:8000 --workers 2 --timeout 120 thoraxvision.app:app
 """
 
 import os
 
 from waitress import serve
 
-from app import app
+from .app import app
 
 
 def main():

@@ -13,9 +13,10 @@ import json
 from pathlib import Path
 from typing import Iterable
 
-BASE_DIR = Path(__file__).resolve().parent
-CLASSES_PATH = BASE_DIR / "model_classes.json"
-MODEL_INFO_PATH = BASE_DIR / "model_info.json"
+from .paths import MODELS_DIR
+
+CLASSES_PATH = MODELS_DIR / "model_classes.json"
+MODEL_INFO_PATH = MODELS_DIR / "model_info.json"
 
 CANONICAL_CLASSES = [
     "adenocarcinoma",

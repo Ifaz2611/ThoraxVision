@@ -11,17 +11,17 @@ import joblib
 import numpy as np
 from PIL import Image
 
-from class_info import (
+from .class_info import (
     CLASSES_PATH,
     MODEL_INFO_PATH,
     describe_class,
     display_label,
     load_class_names,
 )
+from .paths import MODELS_DIR
 
-BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_MODEL_PATH = BASE_DIR / "model.pkl"
-DEFAULT_CNN_PATH = BASE_DIR / "model_cnn.pt"
+DEFAULT_MODEL_PATH = MODELS_DIR / "model.pkl"
+DEFAULT_CNN_PATH = MODELS_DIR / "model_cnn.pt"
 
 
 class PredictorUnavailableError(RuntimeError):
