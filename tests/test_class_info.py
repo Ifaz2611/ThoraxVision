@@ -59,3 +59,7 @@ def test_load_class_names_uses_builtin_fallback(tmp_path):
         load_class_names(tmp_path / "missing.json", tmp_path / "missing2.json")
         == CANONICAL_CLASSES
     )
+
+
+
+# Update the Test_class_info_for_model_.py
